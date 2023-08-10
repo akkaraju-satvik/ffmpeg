@@ -1,0 +1,5 @@
+node_modules/
+inputs/*.mkv
+inputs/*.mka
+outputs/*.mkv
+outputs/*.mka

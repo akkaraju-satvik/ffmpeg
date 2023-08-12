@@ -63,16 +63,72 @@ function createBlankVideoWithAudio(audio) {
   });
 }
 
+// split video into 2 parts
+const splitVideoInto2 = async (video) => {
+  return new Promise((resolve, reject) => {
+
+    const output1 = join(FOLDERS.INPUT, 'splitVideoInto2-1.mkv');
+    const output2 = join(FOLDERS.INPUT, 'splitVideoInto2-2.mkv');
+    ffmpeg()
+      .input(video)
+      .setStartTime('00:00:00')
+      .setDuration('00:00:20')
+      .output(output1)
+      .on('end', () => {
+        ffmpeg()
+          .input(video)
+          .setStartTime('00:00:20')
+          .output(output2)
+          .on('end', () => resolve([output1, output2]))
+          .on('error', reject)
+          .on('progress', progress => console.log(progress.percent + '% done'))
+          .run();
+      })
+      .on('error', reject)
+      .on('progress', progress => console.log(progress.percent + '% done'))
+      .run();
+  });
+};
+
+const join2VideosWith10SecondsGap = async (video1, video2, resolution) => {
+  return new Promise((resolve, reject) => {
+    const output = join(FOLDERS.OUTPUT, 'join2VideosWith10SecondsGap.mkv');
+    ffmpeg()
+      .input(video1)
+      .input(`color=black:s=${resolution}`)
+      .inputFormat('lavfi')
+      .inputOptions(['-t', '10'])
+      .input(video2)
+      .complexFilter([
+        '[0:v] [1:v] [2:v] concat=n=3:v=1 [v]',
+      ], ['v'])
+      .outputOptions('-c:v libx264')
+      .outputOptions('-pix_fmt yuv420p')
+      .output(output)
+      .on('end', () => resolve(output))
+      .on('error', reject)
+      .on('progress', progress => console.log(progress.percent + '% done'))
+      .run();
+  });
+};
+
 async function main() {
   const audio = join(FOLDERS.INPUT, 'RTc415cafaa327c4295e94a17b0a838143.mka');
   const video = join(FOLDERS.INPUT, 'RTb12dd52ff5156d2616fc32897a84ba8d.mkv');
+  const videoHalf1 = join(FOLDERS.INPUT, 'splitVideoInto2-1.mkv');
+  const videoHalf2 = join(FOLDERS.INPUT, 'splitVideoInto2-2.mkv');
   const output = await mergeAudioAndVideo(audio, video);
   console.log(output, 'mergeAudioAndVideo');
   const blankVideo = await createBlankVideo();
   console.log(blankVideo, 'createBlankVideo');
   const blankVideoWithAudio = await createBlankVideoWithAudio(audio);
   console.log(blankVideoWithAudio, 'createBlankVideoWithAudio');
-  
+  ffmpeg.ffprobe(video, async (err, metadata) => {
+    console.log(`${metadata.streams[0].width}x${metadata.streams[0].height}`, 'video resolution');
+    const resolution = `${metadata.streams[0].width}x${metadata.streams[0].height}`
+    const joinedVideoWith10SecondsGap = await join2VideosWith10SecondsGap(videoHalf1, videoHalf2, resolution);
+    console.log(joinedVideoWith10SecondsGap, 'join2VideosWith10SecondsGap');
+  });
 }
 
 main();

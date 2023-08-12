@@ -1,6 +1,9 @@
 node_modules/
 inputs/*.mkv
 inputs/*.mka
+inputs/*.mp3
+inputs/*.mp4
 outputs/*.mkv
-outputs/*.mp4
 outputs/*.mka
+outputs/*.mp3
+outputs/*.mp4

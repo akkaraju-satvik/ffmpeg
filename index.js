@@ -143,6 +143,37 @@ const joinMultipleVideosWith10SecondsGap = async (videos, resolution) => {
   });
 };
 
+const joinMultipleVideosWithUnequalTimeGap = async (videos, timeGaps, resolution) => {
+  return new Promise((resolve, reject) => {
+    const output = join(FOLDERS.OUTPUT, 'joinMultipleVideosWithUnequalTimeGap.mkv');
+    const ffmpegCommand = ffmpeg();
+    videos.forEach((video, index) => {
+      ffmpegCommand.input(video);
+      if (index !== videos.length - 1) {
+        ffmpegCommand.input(`color=black:s=${resolution}`);
+        ffmpegCommand.inputFormat('lavfi');
+        ffmpegCommand.inputOptions(['-t', timeGaps[index]]);
+      }
+    });
+    const complexFilter = ''
+    for (let i = 0; i < (videos.length * 2) - 1; i++) {
+      complexFilter.concat(`${i}:v `)
+    };
+    console.log(complexFilter);
+    ffmpegCommand
+      .complexFilter([
+        `${complexFilter} concat=n=${videos.length + videos.length - 1}:v=1 [v]`,
+      ], ['v'])
+      .outputOptions('-c:v libx264')
+      .outputOptions('-pix_fmt yuv420p')
+      .output(output)
+      .on('end', () => resolve(output))
+      .on('error', reject)
+      .on('progress', progress => console.log(progress.percent + '% done'))
+      .run();
+  });
+}; 
+
 async function main() {
   const audio = join(FOLDERS.INPUT, 'RTc415cafaa327c4295e94a17b0a838143.mka');
   const video = join(FOLDERS.INPUT, 'RTb12dd52ff5156d2616fc32897a84ba8d.mkv');
@@ -157,8 +188,10 @@ async function main() {
   ffmpeg.ffprobe(video, async (err, metadata) => {
     console.log(`${metadata.streams[0].width}x${metadata.streams[0].height}`, 'video resolution');
     const resolution = `${metadata.streams[0].width}x${metadata.streams[0].height}`;
-    const joinedMultipleVideosWith10SecondsGap = await joinMultipleVideosWith10SecondsGap([videoHalf1, videoHalf2, video], resolution);
-    console.log(joinedMultipleVideosWith10SecondsGap, 'join2VideosWith10SecondsGap');
+    // const joinedMultipleVideosWith10SecondsGap = await joinMultipleVideosWith10SecondsGap([videoHalf1, videoHalf2, video], resolution);
+    // console.log(joinedMultipleVideosWith10SecondsGap, 'join2VideosWith10SecondsGap');
+    const joinedMultipleVideosWithUnequalTimeGap = await joinMultipleVideosWithUnequalTimeGap([videoHalf1, videoHalf2, video], [10, 5], resolution);
+    console.log(joinedMultipleVideosWithUnequalTimeGap, 'joinMultipleVideosWithUnequalTimeGap');
   });
 }
 

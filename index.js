@@ -1,6 +1,5 @@
 const ffmpeg = require('fluent-ffmpeg');
-const { promises: fsPromises } = require('fs');
-const { basename, join } = require('path');
+const { join } = require('path');
 
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffprobePath = require('@ffprobe-installer/ffprobe').path;
@@ -15,7 +14,7 @@ ffmpeg.setFfprobePath(ffprobePath);
 
 function mergeAudioAndVideo(audio, video) {
   return new Promise((resolve, reject) => {
-    const output = join(FOLDERS.OUTPUT, basename('mergeAudioAndVideo.mkv'));
+    const output = join(FOLDERS.OUTPUT, 'mergeAudioAndVideo.mkv');
     ffmpeg()
       .input(audio)
       .input(video)
